@@ -4,7 +4,7 @@ const router = express.Router();
 
 router.get('/:id', function(req, res, next) {
   res.json({
-    message: 'Users Endpoint',
+    message: 'Audit Logs Endpoint',
     body: req.body,
     params: req.params,
     query: req.query,
@@ -16,7 +16,7 @@ router.get('/:id', function(req, res, next) {
 
 
 router.get('/', function(req, res, next) {
-  res.send('Users Endpoint');
+  res.send('Audit Logs Home');
 });
 
 
