@@ -40,25 +40,50 @@ router.post('/add', async(req, res, next)=>{
   }
 });
 
-router.post('/update', async(req, res, next)=>{
-  try{
-    if (!req.body.id) {
-      throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST, "Validation Error", 'Id Faild is required');
+router.post('/update', async (req, res, next) => {
+  let body = req.body;
+    try {
+        if (!body._id) {
+            throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST, "Validation Error", 'Id field is required');
+        }
+
+        let updates = {};
+
+        if (body.name) {
+            updates.name = req.body.name;
+        }
+
+        if (typeof body.is_active === 'boolean') {
+            updates.is_active = req.body.is_active;
+        }
+
+        await Categories.updateOne({ _id: body._id }, { $set: updates });
+
+        res.json(Response.successResponse({ success: true }));
+
+    } catch (err) {
+        let errorResponse = Response.errorResponse(err);
+        const statusCode = errorResponse.code || 500;
+        if (!errorResponse.code) {
+             console.error("Beklenmedik Sunucu Hatası:", err);
+        }
+        res.status(statusCode).json(errorResponse);
     }
-    if(body.name){
-      let updates = {};
-      updates.name = body.name;
-    }
-    if(body.is_active === typeof Boolean){ 
-      updates.is_active = body.is_active;
-    }
-    await Categories.updates({_id: body.id}, updates);
-    res.json(Response.successResponse({success: true}));
-    
-  }catch(err){
+});
+
+router.delete('/delete', async (req, res, next) => {
+  let body = req.body;
+    try {
+      if(!body._id){
+        throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST, "Validation Error", 'Id field is required');
+      }
+      await Categories.deleteOne({_id: body._id});
+      res.json(Response.successResponse({success: true}));
+
+    } catch (err) {
       let errorResponse = Response.errorResponse(err);
       res.status(errorResponse.code).json(errorResponse);
-  } 
+    }
+});
 
-})
 module.exports = router;
