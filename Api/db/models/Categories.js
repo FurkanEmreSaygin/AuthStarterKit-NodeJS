@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 const schema = mongoose.Schema({
     is_active : {type:Boolean, default:true},
-    createdBy : {type : mongoose.SchemaTypes.ObjectId, require : true,}
+    name : {type : String, required : true, unique : true},
+    createdBy : {type : mongoose.SchemaTypes.ObjectId,}
 
 },{
     versionKey: false,
