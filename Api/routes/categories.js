@@ -9,11 +9,9 @@ router.get('/', async(req, res, next)=>{
   try {
     let categories = await Categories.find({});
     res.json(Response.successResponse(categories));
-
   } catch (err) {
     let errorResponse = Response.errorResponse(err);
     res.status(errorResponse.code).json(Response.errorResponse(err));
-
   }
 });
 
@@ -63,10 +61,6 @@ router.post('/update', async (req, res, next) => {
 
     } catch (err) {
         let errorResponse = Response.errorResponse(err);
-        const statusCode = errorResponse.code || 500;
-        if (!errorResponse.code) {
-             console.error("Beklenmedik Sunucu Hatası:", err);
-        }
         res.status(statusCode).json(errorResponse);
     }
 });

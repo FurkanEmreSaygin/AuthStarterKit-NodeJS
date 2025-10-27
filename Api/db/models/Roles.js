@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { version } = require('react');
+const RolesPrivileges = require('./RolesPrivileges');
 
 const schema = mongoose.Schema({
     role_name: {type: String, require: true},
@@ -15,9 +15,15 @@ const schema = mongoose.Schema({
     }
 })
 
-class Roles extends mongoose.Model {
+schema.pre("deleteOne", { document: false, query: true }, async function () {
+  console.log("Roles 'pre-deleteOne' hook tetiklendi!"); 
 
-}
+  const query = this.getQuery();
 
-schema.loadClass(Roles);
+  if (query._id) {
+
+    await RolesPrivileges.deleteMany({ role_id: query._id });
+  }
+});
+
 module.exports = mongoose.model('Roles', schema);
