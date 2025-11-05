@@ -19,5 +19,6 @@ module.exports = {
         INT_SERVER_ERROR: 500,
         BAD_GATEWAY: 502
     },
-    Pass_Length:8
+    Pass_Length:8,
+    SUPER_ADMIN:"SUPER_ADMIN"
 };
