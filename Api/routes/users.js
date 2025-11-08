@@ -95,6 +95,7 @@ router.delete('/delete', async(req, res ,next)=>{
     let body = req.body;
     try {
         if (!body._id) throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST, "Validation Error", 'Id is required');
+        await UserRoles.deleteMany({ user_id: body._id})
         await Users.deleteOne({ _id: body._id });
         res.json(Response.successResponse({success: true}))
     } catch (err) {
