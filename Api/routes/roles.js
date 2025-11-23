@@ -12,7 +12,7 @@ router.get("/", async (req, res, next) => {
     let roles = await Roles.find({});
     res.json(Response.successResponse(roles));
   } catch (err) {
-    let errorResponse = response.errorResponse(err);
+    let errorResponse = Response.errorResponse(err);
     res.status(errorResponse.code).json(Response.errorResponse(err));
   }
 });
