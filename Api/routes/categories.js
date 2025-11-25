@@ -7,6 +7,12 @@ const Enum = require('../config/Enum');
 const AuditLog = require('../lib/AuditLogs')
 const logger = require('../lib/logger/loggerClass');
 
+const auth = require("../lib/auth")();
+
+router.all("*", auth.authenticate(), (req, res, next) => {
+  next();
+});
+
 router.get('/', async(req, res, next)=>{
   try {
     let categories = await Categories.find({});

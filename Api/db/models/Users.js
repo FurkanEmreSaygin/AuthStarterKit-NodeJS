@@ -1,4 +1,8 @@
 const mongoose = require('mongoose');
+const {Pass_Length, HTTP_CODES} = require("../../config/Enum")
+const is = require("is_js");
+const CustomError = require('../../lib/Error');
+const bcrypt = require("bcrypt-nodejs");
 
 const schema = mongoose.Schema(
   {
@@ -21,6 +25,17 @@ const schema = mongoose.Schema(
 
 class Users extends mongoose.Model {
 
+  validPassword(passport) {
+    return bcrypt.compareSync(passport, this.password);
+  }
+
+
+  static validateFieldBeforeAuthentication(email, password) {
+    if (typeof password !== "string" || password.length < Pass_Length || is.not.email(email)){
+      throw new CustomError(HTTP_CODES.UNAUTHORIZED, "Authentication Error", "Invalid email or password");
+    }
+  return null;
+  }
 }
 
 schema.loadClass(Users);

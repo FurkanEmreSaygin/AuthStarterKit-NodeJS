@@ -6,9 +6,155 @@ const Roles = require('../db/models/Roles')
 const Response = require('../lib/Response');
 const CustomError = require('../lib/Error');
 const Enum = require('../config/Enum');
-const bcrypt = require('bcrypt-nodejs')
+const bcrypt = require("bcrypt-nodejs");
 const is = require('is_js')
+const jwt = require("jwt-simple");
+const config = require('../config');
+const auth = require("../lib/auth")();
 
+router.post("/register", async (req, res, next) => {
+  let body = req.body;
+  try {
+    let user = await Users.findOne({ email: body.email });
+    if (user)
+      return res
+        .status(Enum.HTTP_CODES.CONFLICT)
+        .send("Bu e-posta adresi zaten kullanılıyor.");
+
+    if (!body.email)
+      throw new CustomError(
+        Enum.HTTP_CODES.BAD_REQUEST,
+        "Validation Error",
+        "Email field is required"
+      );
+    if (!is.email(body.email))
+      throw new CustomError(
+        Enum.HTTP_CODES.BAD_REQUEST,
+        "Validation Error",
+        "Email feald is must be an email"
+      );
+    if (!body.password)
+      throw new CustomError(
+        Enum.HTTP_CODES.BAD_REQUEST,
+        "Validation Error",
+        "Password field is required"
+      );
+    if (body.password.length < Enum.Pass_Length)
+      throw new CustomError(
+        Enum.HTTP_CODES.BAD_REQUEST,
+        "Validation Error",
+        "Password lenght must be greater than " + Enum.Pass_Length
+      );
+    if (!body.first_name)
+      throw new CustomError(
+        Enum.HTTP_CODES.BAD_REQUEST,
+        "Validation Error",
+        "First_name field is required"
+      );
+    if (!body.last_name)
+      throw new CustomError(
+        Enum.HTTP_CODES.BAD_REQUEST,
+        "Validation Error",
+        "Last_Name field is required"
+      );
+    if (!body.phone_number)
+      throw new CustomError(
+        Enum.HTTP_CODES.BAD_REQUEST,
+        "Phone Number",
+        "Phone Number field is required"
+      );
+    if (typeof body.is_active !== "boolean") body.is_active = true;
+    if (!body.roles || !Array.isArray(body.roles) || body.roles.length == 0)
+      throw new CustomError(
+        Enum.HTTP_CODES.BAD_REQUEST,
+        "Role",
+        "Role field is required"
+      );
+
+    let validRoles = await Roles.find({ _id: { $in: body.roles } }).select(
+      "_id"
+    );
+    if (validRoles.length !== body.roles.length)
+      throw new CustomError(
+        Enum.HTTP_CODES.BAD_REQUEST,
+        "Role",
+        "Role field is required"
+      );
+
+    let hashPassword = bcrypt.hashSync(
+      body.password,
+      bcrypt.genSaltSync(8),
+      null
+    );
+    let newUser = new Users({
+      email: body.email,
+      password: hashPassword,
+      is_active: body.is_active,
+      first_name: body.first_name,
+      last_name: body.last_name,
+      phone_number: body.phone_number,
+    });
+    await newUser.save();
+
+    const userRolesToCreate = validRoles.map((role) => ({
+      user_id: newUser._id,
+      role_id: role._id,
+    }));
+
+    if (userRolesToCreate.length > 0) {
+      await UserRoles.insertMany(userRolesToCreate);
+    }
+
+    res.json(Response.successResponse({ success: true }));
+  } catch (err) {
+    let errorResponse = Response.errorResponse(err);
+    res.status(errorResponse.code).json(errorResponse);
+  }
+});
+router.post("/auth", async (req, res, next) => {
+  let body = req.body;
+  try {
+    let { email, password } = body;
+
+    Users.validateFieldBeforeAuthentication(email, password);
+
+    let user = await Users.findOne({ email: email });
+
+    if (!user)
+      throw new CustomError(
+        Enum.HTTP_CODES.UNAUTHORIZED,
+        "Authentication Error",
+        "Invalid email or password"
+      );
+
+    if (!user.validPassword(password))
+      throw new CustomError(
+        Enum.HTTP_CODES.UNAUTHORIZED,
+        "Authentication Error",
+        "Invalid email or password"
+      );
+
+    let payload = {
+      id: user._id,
+      exp: parseInt(Date.now() / 1000) + config.JWT.EXPIRE_TIME,
+    };
+
+    let token = jwt.encode(payload, config.JWT.SECRET);
+    let userData = {
+      _id: user._id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+    };
+    res.json(Response.successResponse({ token, user: userData }));
+  } catch (err) {
+    let errorResponse = Response.errorResponse(err);
+    res.status(errorResponse.code).json(errorResponse);
+  }
+});
+
+router.all("*", auth.authenticate(), (req, res, next) =>{
+    next();
+})
 
 router.get('/', async(req , res, next)=>{
     try {
@@ -98,52 +244,6 @@ router.delete('/delete', async(req, res ,next)=>{
         await UserRoles.deleteMany({ user_id: body._id})
         await Users.deleteOne({ _id: body._id });
         res.json(Response.successResponse({success: true}))
-    } catch (err) {
-        let errorResponse = Response.errorResponse(err);
-        res.status(errorResponse.code).json(errorResponse);
-    }
-})
-router.post('/register', async(req, res, next)=>{
-    let body = req.body;
-    try {
-        let user = await Users.findOne({ email: body.email });
-        if(user) return res.status(Enum.HTTP_CODES.CONFLICT).send("Bu e-posta adresi zaten kullanılıyor.");
-
-
-        if(!body.email) throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST, 'Validation Error', 'Email field is required');
-        if(!is.email(body.email)) throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST, 'Validation Error', 'Email feald is must be an email')
-        if(!body.password) throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST, 'Validation Error', 'Password field is required');
-        if(body.password.length < Enum.Pass_Length) throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST, 'Validation Error', "Password lenght must be greater than "+ Enum.Pass_Length);
-        if(!body.first_name) throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST, 'Validation Error', 'First_name field is required');
-        if(!body.last_name)throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST,"Validation Error","Last_Name field is required");
-        if(!body.phone_number)throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST,"Phone Number","Phone Number field is required")
-        if(typeof body.is_active !== 'boolean') body.is_active = true;
-        if(!body.roles || !Array.isArray(body.roles) || body.roles.length == 0 ) throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST,"Role","Role field is required");
-        
-        let validRoles = await Roles.find({_id: {$in: body.roles}}).select('_id');
-        if (validRoles.length !== body.roles.length) throw new CustomError(Enum.HTTP_CODES.BAD_REQUEST,"Role","Role field is required");
-
-        let hashPassword = bcrypt.hashSync(body.password, bcrypt.genSaltSync(8), null);
-        let newUser = new Users({
-            email: body.email,
-            password: hashPassword,
-            is_active: body.is_active,
-            first_name: body.first_name,
-            last_name: body.last_name,
-            phone_number: body.phone_number,
-        })
-        await newUser.save();
-
-        const userRolesToCreate = validRoles.map(role => ({
-            user_id: newUser._id,
-            role_id: role._id
-        }));
-        
-        if (userRolesToCreate.length > 0) {
-          await UserRoles.insertMany(userRolesToCreate);
-        }
-        
-        res.json(Response.successResponse({ success: true }));
     } catch (err) {
         let errorResponse = Response.errorResponse(err);
         res.status(errorResponse.code).json(errorResponse);
