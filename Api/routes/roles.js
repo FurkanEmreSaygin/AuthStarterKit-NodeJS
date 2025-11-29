@@ -6,6 +6,8 @@ const CustomError = require("../lib/Error");
 const Enum = require("../config/Enum");
 const role_privileges = require("../config/role_privileges");
 const RolesPrivileges = require("../db/models/RolesPrivileges");
+const config = require("../config");
+const i18n = new (require("../lib/i18n"))(config.DEFAULT_LANG);
 
 const auth = require("../lib/auth")();
 
@@ -19,19 +21,20 @@ router.get("/", async (req, res, next) => {
     let roles = await Roles.find({});
     res.json(Response.successResponse(roles));
   } catch (err) {
-    let errorResponse = Response.errorResponse(err);
-    res.status(errorResponse.code).json(Response.errorResponse(err));
+    let errorResponse = Response.errorResponse(err, req.user?.language);
+    res.status(errorResponse.code).json(errorResponse);
   }
 });
 
 router.post("/add", async (req, res, next) => {
   let body = req.body;
+  let userLang = req.user.language;
   try {
     if (!body.name) {
       throw new CustomError(
         Enum.HTTP_CODES.BAD_REQUEST,
-        "Validation Error",
-        "Role name is required"
+        i18n.translate("COMMEN.VALIDATION_ERROR", userLang),
+        i18n.translate("COMMEN.FIELD_MUST_BE_FILLED", userLang, ["Role name"])
       );
     }
     if (
@@ -41,8 +44,8 @@ router.post("/add", async (req, res, next) => {
     ) {
       throw new CustomError(
         Enum.HTTP_CODES.BAD_REQUEST,
-        "Validation Error",
-        "Permissions field is required"
+        i18n.translate("COMMEN.VALIDATION_ERROR", userLang),
+        i18n.translate("COMMEN.FIELD_MUST_BE_FILLED", userLang, ["permissions"])
       );
     }
     if (typeof body.is_active !== "boolean") {
@@ -66,19 +69,20 @@ router.post("/add", async (req, res, next) => {
     }
     res.json(Response.successResponse({ success: true }));
   } catch (err) {
-    let errorResponse = Response.errorResponse(err);
+    let errorResponse = Response.errorResponse(err, req.user?.language);
     res.status(errorResponse.code).json(errorResponse);
   }
 });
 
 router.post("/update", async (req, res, next) => {
   let body = req.body;
+  let userLang = req.user.language;
   try {
     if (!body._id) {
       throw new CustomError(
         Enum.HTTP_CODES.BAD_REQUEST,
-        "Validation Error ",
-        "Id field is required"
+        i18n.translate("COMMEN.VALIDATION_ERROR", userLang),
+        i18n.translate("COMMEN.FIELD_MUST_BE_FILLED", userLang, ["_id"])
       );
     }
 
@@ -123,25 +127,26 @@ router.post("/update", async (req, res, next) => {
     res.json(Response.successResponse({ success: true }));
     
   } catch (err) {
-    let errorResponse = Response.errorResponse(err);
+    let errorResponse = Response.errorResponse(err, req.user?.language);
     res.status(errorResponse.code).json(errorResponse);
   }
 });
 
 router.delete("/delete", async (req, res, next) => {
   let body = req.body;
+  let userLang = req.user?.language;
   try {
     if (!body._id) {
       throw new CustomError(
         Enum.HTTP_CODES.BAD_REQUEST,
-        "Validation Error ",
-        "Id field is required"
+        i18n.translate("COMMEN.VALIDATION_ERROR", userLang),
+        i18n.translate("COMMEN.FIELD_MUST_BE_FILLED", userLang, ["_id"])
       );
     }
     await Roles.deleteOne({ _id: body._id });
     res.json(Response.successResponse({ success: true }));
   } catch (err) {
-    let errorResponse = Response.errorResponse(err);
+    let errorResponse = Response.errorResponse(err, req.user?.language);
     res.status(errorResponse.code).json(errorResponse);
   }
 });
