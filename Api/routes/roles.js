@@ -16,7 +16,7 @@ router.all("*", auth.authenticate(), (req, res, next) => {
 });
 
 
-router.get("/", async (req, res, next) => {
+router.get("/", auth.checkRoles("role_view"), async (req, res, next) => {
   try {
     let roles = await Roles.find({});
     res.json(Response.successResponse(roles));
@@ -26,7 +26,7 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.post("/add", async (req, res, next) => {
+router.post("/add", auth.checkRoles("role_add"), async (req, res, next) => {
   let body = req.body;
   let userLang = req.user.language;
   try {
@@ -74,7 +74,7 @@ router.post("/add", async (req, res, next) => {
   }
 });
 
-router.post("/update", async (req, res, next) => {
+router.post("/update", auth.checkRoles("role_update") ,async (req, res, next) => {
   let body = req.body;
   let userLang = req.user.language;
   try {
@@ -132,7 +132,7 @@ router.post("/update", async (req, res, next) => {
   }
 });
 
-router.delete("/delete", async (req, res, next) => {
+router.delete("/delete", auth.checkRoles("role_delete") ,async (req, res, next) => {
   let body = req.body;
   let userLang = req.user?.language;
   try {
@@ -151,7 +151,7 @@ router.delete("/delete", async (req, res, next) => {
   }
 });
 
-router.get("/role_privileges", async (req, res, next) => {
+router.get("/role_privileges",async (req, res, next) => {
   res.json(role_privileges);
 });
 module.exports = router;

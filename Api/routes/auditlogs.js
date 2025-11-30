@@ -9,7 +9,7 @@ router.all("*", auth.authenticate(), (req, res, next) => {
   next();
 });
 
-router.post('/', async (req, res, next)=>{
+router.post('/', auth.checkRoles("auditlogs_view") , async (req, res, next)=>{
     let body = req.body;
     try {
         let query = {};

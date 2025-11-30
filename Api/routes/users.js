@@ -157,7 +157,7 @@ router.all("*", auth.authenticate(), (req, res, next) => {
   next();
 });
 
-router.get("/", async (req, res, next) => {
+router.get("/", auth.checkRoles("user_view"), async (req, res, next) => {
   try {
     let users = await Users.find({});
     res.json(Response.successResponse(users));
@@ -166,7 +166,7 @@ router.get("/", async (req, res, next) => {
     res.status(errorResponse.code).json(errorResponse);
   }
 });
-router.post("/add", async (req, res, next) => {
+router.post("/add", auth.checkRoles("user_add"), async (req, res, next) => {
   let body = req.body;
   let userLang = req.user?.language;
   try {
@@ -239,7 +239,7 @@ router.post("/add", async (req, res, next) => {
     res.status(errorResponse.code).json(errorResponse);
   }
 });
-router.post("/update", async (req, res, next) => {
+router.post("/update", auth.checkRoles("user_update"), async (req, res, next) => {
   let body = req.body;
   let userLang = req.user?.language;
   try {
@@ -299,7 +299,7 @@ router.post("/update", async (req, res, next) => {
   }
 });
 
-router.delete("/delete", async (req, res, next) => {
+router.delete("/delete",auth.checkRoles("role_update"), async (req, res, next) => {
   let body = req.body;
   let userLang = req.user?.language;
   try {

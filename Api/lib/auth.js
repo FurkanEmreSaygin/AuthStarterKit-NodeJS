@@ -1,9 +1,14 @@
 const passport = require("passport");
 const {ExtractJwt , Strategy} = require("passport-jwt");
-const config = require("../config")
-const Users = require("../db/models/Users")
-const UserRoles = require("../db/models/UserRoles")
-const RolesPrivileges = require("../db/models/RolesPrivileges")
+const config = require("../config");
+const Users = require("../db/models/Users");
+const UserRoles = require("../db/models/UserRoles");
+const RolesPrivileges = require("../db/models/RolesPrivileges");
+const priv = require("../config/role_privileges");
+const Response = require("./Response");
+const {HTTP_CODES} = require("../config/Enum");
+const CustomError = require("./Error");
+
 
 module.exports = function(){
     let strategy = new Strategy({
@@ -14,22 +19,25 @@ module.exports = function(){
           let user = await Users.findOne({ _id: payload.id });
           if (user) {
             let userRole = await UserRoles.find({
-              user_id: user._id,
-              is_active: true,
+              user_id: user._id
             });
+
             let rolePrivileges = await RolesPrivileges.find({
               role_id: { $in: userRole.map((u) => u.role_id) },
-              is_active: true,
             });
+
+            let privileges = rolePrivileges.map(r => priv.privileges.find(x => x.key == r.permission))
+
             done(null, {
               id: user._id,
               email: user.email,
-              roles: rolePrivileges,
+              roles: privileges,
               first_name: user.first_name,
               last_name: user.last_name,
               language: user.language,
               exp: parseInt(Date.now() / 1000) * config.JWT.EXPIRE_TIME,
             });
+
           } else {
             done(new Error("User not found"), null);
           }
@@ -44,6 +52,21 @@ module.exports = function(){
         },
         authenticate: function(){
             return passport.authenticate("jwt", {session: false});
+        },
+        checkRoles: (...expectedRoles) => {
+          return (req, res, next)=>{
+
+            let i = 0; 
+            let privileges = req.user.roles.map(x => x.key);
+
+            while(i< expectedRoles.length && !privileges.includes(expectedRoles[i])) i++;
+
+            if (i >= expectedRoles.length){
+              let response = Response.errorResponse(new CustomError(HTTP_CODES.UNAUTHORIZED, "Need Permission", "Need permission") );
+              return res.status(response.code).json(response);
+            } 
+              return next();
+          };
         }
     }
 }

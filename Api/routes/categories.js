@@ -15,7 +15,7 @@ router.all("*", auth.authenticate(), (req, res, next) => {
   next();
 });
 
-router.get("/", async (req, res, next) => {
+router.get("/", auth.checkRoles("category_view"), async (req, res, next) => {
   try {
     let categories = await Categories.find({});
     res.json(Response.successResponse(categories));
@@ -25,7 +25,7 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.post("/add", async (req, res, next) => {
+router.post("/add", auth.checkRoles("category_add") , async (req, res, next) => {
   let body = req.body;
   let userLang = req.user?.language;
   try {
@@ -71,7 +71,7 @@ router.post("/add", async (req, res, next) => {
   }
 });
 
-router.post("/update", async (req, res, next) => {
+router.post("/update", auth.checkRoles("category_update") , async (req, res, next) => {
   let body = req.body;
   let userLang = req.user?.language;
   try {
@@ -122,7 +122,7 @@ router.post("/update", async (req, res, next) => {
   }
 });
 
-router.delete("/delete", async (req, res, next) => {
+router.delete("/delete",auth.checkRoles("category_delete") , async (req, res, next) => {
   let body = req.body;
   let userLang = req.user?.language;
   try {
