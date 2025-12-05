@@ -8,6 +8,7 @@ const AuditLog = require("../lib/AuditLogs");
 const logger = require("../lib/logger/loggerClass");
 const config = require("../config");
 const i18n = new (require("../lib/i18n"))(config.DEFAULT_LANG);
+const emitter = require("../lib/Emitter")
 
 const auth = require("../lib/auth")();
 
@@ -57,6 +58,7 @@ router.post("/add", auth.checkRoles("category_add") , async (req, res, next) => 
       "Add",
       `New category added: ${body.name}`
     );
+    emitter.getEmitter("notifications").emit("messages", {message: newCategory.name+ " is added"});
 
     res.json(Response.successResponse({ success: true }));
   } catch (err) {
